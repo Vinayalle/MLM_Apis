@@ -2,7 +2,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../../config/database");
 
 module.exports = sequelize.define(
-  "project",
+  "product",
   {
     id: {
       allowNull: false,
@@ -22,19 +22,9 @@ module.exports = sequelize.define(
         },
       },
     },
-    isFeatured: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-      allowNull: false,
-      validate: {
-        isIn: {
-          args: [[true, false]],
-          msg: "isFeatured value must be true or false",
-        },
-      },
-    },
+
     productImage: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
+      type: DataTypes.STRING,
       allowNull: false,
       validate: {
         notNull: {
@@ -54,18 +44,7 @@ module.exports = sequelize.define(
         },
       },
     },
-    shortDescription: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-      validate: {
-        notNull: {
-          msg: "shortDescription cannot be null",
-        },
-        notEmpty: {
-          msg: "shortDescription cannot be empty",
-        },
-      },
-    },
+
     description: {
       type: DataTypes.TEXT,
       allowNull: false,
@@ -78,38 +57,9 @@ module.exports = sequelize.define(
         },
       },
     },
-    productUrl: {
-      type: DataTypes.STRING,
+    bv: {
+      type: DataTypes.DOUBLE,
       allowNull: false,
-      validate: {
-        notNull: {
-          msg: "productUrl cannot be null",
-        },
-        notEmpty: {
-          msg: "productUrl cannot be empty",
-        },
-        isUrl: {
-          msg: "Invalid productUrl string",
-        },
-      },
-    },
-    category: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: false,
-      validate: {
-        notNull: {
-          msg: "category cannot be null",
-        },
-      },
-    },
-    tags: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: false,
-      validate: {
-        notNull: {
-          msg: "tags cannot be null",
-        },
-      },
     },
     createdBy: {
       type: DataTypes.INTEGER,
@@ -130,6 +80,6 @@ module.exports = sequelize.define(
   {
     paranoid: true,
     freezeTableName: true,
-    modelName: "project",
+    modelName: "product",
   }
 );
