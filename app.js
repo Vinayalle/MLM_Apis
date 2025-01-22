@@ -11,8 +11,9 @@ const AppError = require("./utils/appError");
 const globalErrorHandler = require("./controller/errorController");
 
 const app = express();
-
+const cors = require("cors");
 app.use(express.json());
+app.use(cors());
 
 // all routes will be here
 app.use("/api/v1/auth", authRouter);

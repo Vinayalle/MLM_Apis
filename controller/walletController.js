@@ -57,6 +57,101 @@ const updateWallet = catchAsync(async (req, res, next) => {
   }
 });
 
+const updateParentBV = catchAsync(async (req, res, next) => {
+  try {
+    const { parentId, sponsorId, currentUserPosition, bv } = req.body;
+
+    // Validate required inputs
+    if (!parentId || !currentUserPosition || !bv) {
+      return res.status(400).json({
+        status: "error",
+        message: "Missing required fields (parentId, currentUserPosition, bv)",
+      });
+    }
+
+    // Fetch the parent user
+    const parentUser = await user.findOne({
+      where: { id: parentId },
+    });
+
+    if (!parentUser) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Parent user not found" });
+    }
+
+    // Determine which BV field to update based on currentUserPosition
+    if (currentUserPosition === "left") {
+      parentUser.leftBV += 1;
+    } else if (currentUserPosition === "right") {
+      parentUser.rightBV += 1;
+    } else {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid currentUserPosition (must be 'left' or 'right')",
+      });
+    }
+
+    // Save the updated parent user data
+    await parentUser.save();
+
+    const leftbv = parentUser.leftBV;
+    const rightbv = parentUser.rightBV;
+    const dailyLimit = 15; // Maximum BV that can be counted for matching income
+    let matchedBV = Math.min(leftbv, rightbv);
+
+    if (matchedBV > dailyLimit) {
+      matchedBV = dailyLimit;
+    }
+
+    // Fetch wallet income using the parent's user ID
+    const walletIncome = await wallet.findOne({
+      where: { userId: parentId }, // Ensure using `userId` here to match the wallet with the user
+    });
+
+    if (!walletIncome) {
+      return res.status(404).json({
+        status: "error",
+        message: "Wallet not found for the parent user",
+      });
+    }
+
+    // Ensure matchingIncome is initialized to 0 if it's null or undefined
+    const currentMatchingIncome = walletIncome.matchingIncome || 0;
+
+    const matchingIncome = matchedBV * 1000; // 1 BV = 1000
+    console.log(`Calculated Matching Income: ${matchingIncome}`); // Debugging line to check value
+
+    // Add the calculated matchingIncome to the current matchingIncome
+    walletIncome.matchingIncome = currentMatchingIncome + matchingIncome;
+
+    // Deduct matched BV from left and right BV
+    parentUser.leftBV -= matchedBV;
+    parentUser.rightBV -= matchedBV;
+
+    // Save the wallet and parent user changes
+    await Promise.all([walletIncome.save(), parentUser.save()]);
+
+    res.status(200).json({
+      status: "success",
+      message: `BV and matching income updated successfully for parent user ${parentId}`, // Use parentId here
+      data: {
+        parentId,
+        updatedField: currentUserPosition === "left" ? "leftBV" : "rightBV",
+        updatedValue: bv,
+        leftBV: parentUser.leftBV,
+        rightBV: parentUser.rightBV,
+        matchingIncome: walletIncome.matchingIncome,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+});
+
 const getAllProject = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
   const result = await project.findAll({
@@ -135,6 +230,7 @@ const deleteProject = catchAsync(async (req, res, next) => {
 
 module.exports = {
   updateWallet,
+  updateParentBV,
   //   getAllProject,
   //   getProjectById,
   //   updateProject,
